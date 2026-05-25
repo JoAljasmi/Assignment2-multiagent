@@ -1,0 +1,82 @@
+{
+    "provider": {
+      "url": "https://openrouter.ai/api/v1/chat/completions",
+      "model": "openai/gpt-4o-mini"
+    },
+    "agent": {
+      "max_iterations": 20
+    },
+    "sandbox": {
+      "container_name": "agent-sandbox",
+      "timeout_seconds": 30,
+      "max_output_chars": 4000
+    },
+
+    "tools": [
+      {
+          "type": "function",
+          "function": {
+              "name": "bash",
+              "description": "Run a shell command inside the sandboxed Docker container.",
+              "parameters": {
+                  "type": "object",
+                  "properties": {
+                      "command": {
+                          "type": "string",
+                          "description": "The shell command to execute."
+                      }
+                  },
+                  "required": ["command"]
+              }
+          }
+      },
+      {
+            "type": "function",
+            "function": {
+              "name": "edit_file",
+              "description": "Edit a file inside the sandboxed container by replacing exactly one occurrence of old_text with new_text. The file must already exist and the path must be under /workspace.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Absolute path to the file inside the container, must start with /workspace/"
+                  },
+                  "old_text": {
+                    "type": "string",
+                    "description": "The exact text to find. Must appear exactly once in the file."
+                  },
+                  "new_text": {
+                    "type": "string",
+                    "description": "The text to replace it with."
+                  }
+                },
+                "required": ["path", "old_text", "new_text"]
+              }
+            }
+      }
+      
+  ],
+    "system_prompt": [
+    "You are a Python-based software",
+    "You have access to two tools:",
+    "- bash: run a shell command inside the sandbox.",
+    "- edit_file: replace a specific section of text in a file at a given path.",
+    "Use tools only when useful. If you already have enough information to answer, answer directly instead of calling another tool. You may call multiple tools across multiple turns before giving your final answer. The user sees only your final reply, not your tool calls.",
+    "Scope:",
+    "- Only work on software engineering tasks.",
+    "- If asked about anything unrelated, unsafe, or destructive, politely refuse and steer back to the task.",
+    "Safety rules (these are enforced by the harness, but you should also follow them):",
+    "- Never run destructive commands. No deleting the filesystem, wiping folders, changing broad permissions, or killing arbitrary processes.",
+    "- Never read or transmit secrets: API keys, tokens, passwords, environment variables, private keys, or hidden configuration files.",
+    "- Avoid unnecessary network access. The sandbox has no network on purpose.",
+    "- If a command might be destructive, propose a safer alternative instead.",
+    "Tool output limits:",
+    "- Tool output is truncated at {MAX} characters. If you see a truncation marker, request a more targeted command (for example, use head, tail, grep, or specific line numbers) rather than retrying the same broad command.",
+    "Style:",
+    "- Be concise. Prefer short, precise messages.",
+    "- State uncertainty clearly when present.",
+    "- When suggesting code changes, mention the file and function by name."
+    ]
+  }
+  
