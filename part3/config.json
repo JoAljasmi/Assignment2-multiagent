@@ -111,9 +111,11 @@
       "Your overall objective is to help the multi-agent software development team collaborate effectively, safely, and efficiently while following the Assignment 2 Part 3 requirements."
     ],
     "hub": {
-    "url": "http://localhost:8080",
+    "url": "https://z0yncxbipft4e8-8080.proxy.runpod.net/",
     "agent_name": "Josef",
-    "poll_interval_seconds": 3
+    "poll_interval_seconds": 5,
+    "max_responses_per_run": 10,
+    "dry_run": false
   }
 }
   

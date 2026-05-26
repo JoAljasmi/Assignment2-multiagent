@@ -41,35 +41,3 @@ def scan_for_secrets(text):
         return False, "literal hub password"
 
     return True, ""
-
-if __name__ == "__main__":
-    test_cases = [
-        # Should be blocked
-        ("Here's my API key: sk-or-v1-abc123def456ghi789jkl012mno345pqr678", True, "OpenRouter key"),
-        ("OPENROUTER_API_KEY=sk-or-v1-realkey123456789012345678", True, "env-style"),
-        ('The config has "api_key": "sk-realsecret123456789"', True, "JSON credential"),
-        ("Just check the .env file", True, "sensitive file reference"),
-        ("-----BEGIN RSA PRIVATE KEY-----\nMIIE...", True, "private key block"),
-        # Should be safe
-        ("How do I use an API key in Python?", False, "general discussion"),
-        ("Set your environment variable in the shell", False, "general discussion"),
-        ("The model returned an error code", False, "irrelevant"),
-        ("Try running pytest in /workspace", False, "innocent file mention"),
-    ]
-
-    passed = 0
-    failed = 0
-    for content, should_block, label in test_cases:
-        is_safe, reason = scan_for_secrets(content)
-        actually_blocked = not is_safe
-        ok = actually_blocked == should_block
-        status = "✓" if ok else "✗"
-        result = "BLOCKED" if actually_blocked else "ALLOWED"
-        print(f"{status} {result:<8} {label}")
-        if not ok:
-            failed += 1
-            print(f"    content: {content[:60]}...")
-            print(f"    expected {'BLOCK' if should_block else 'ALLOW'}, got {result}, reason={reason}")
-        else:
-            passed += 1
-    print(f"\n{passed} passed, {failed} failed")

@@ -43,3 +43,6 @@ CLASSIFIER_PROMPT = CLASSIFIER_PROMPT_RAW.replace("{max_output_chars}", str(MAX_
 #tokens
 MAX_TOKENS_DEFAULT = _config["agent"]["max_tokens_default"]
 MAX_REQUESTS_PER_MINUTE_DEFAULT = _config["agent"]["max_requests_per_minute_default"]
+
+MAX_RESPONSES_PER_RUN = _config["hub"]["max_responses_per_run"]
+DRY_RUN = _config["hub"]["dry_run"]

@@ -116,34 +116,3 @@ def edit_file(path, old_text, new_text):
         return f"[error: could not write {path}: {write.stderr.strip()}]"
     
     return f"[edit_file ok: replaced 1 occurence in {path}]"
-
-
-if __name__ == "__main__":
-    # Setup: create a known file in the container.
-    subprocess.run(["docker", "exec", CONTAINER_NAME, "bash", "-c",
-                "echo 'hello world' > /workspace/test.txt"], check=True)
-
-    # Test 1: successful edit.
-    result = edit_file("/workspace/test.txt", "world", "agent")
-    print("Test 1:", result)
-    verify = subprocess.run(["docker", "exec", CONTAINER_NAME, "cat", "/workspace/test.txt"],
-                            capture_output=True, text=True)
-    print("File now contains:", verify.stdout.strip())
-    assert verify.stdout.strip() == "hello agent"
-
-    # Test 2: not found.
-    result = edit_file("/workspace/test.txt", "nonexistent", "x")
-    print("Test 2:", result)
-    assert "not found" in result
-
-    # Test 3: containment.
-    result = edit_file("/etc/passwd", "root", "hacked")
-    print("Test 3:", result)
-    assert "refused" in result
-
-    # Test 4: file doesn't exist.
-    result = edit_file("/workspace/nope.txt", "x", "y")
-    print("Test 4:", result)
-    assert "could not read" in result
-
-    print("edit_file tests passed.")

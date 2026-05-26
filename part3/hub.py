@@ -1,6 +1,11 @@
 import requests
-from config import HUB_URL, HUB_PASSWORD, AGENT_NAME
+from config import HUB_URL, HUB_PASSWORD, AGENT_NAME, MAX_RESPONSES_PER_RUN, DRY_RUN
 from secrets_filter import scan_for_secrets
+import threading
+
+_posted_count = 0
+_count_lock = threading.Lock()
+
 
 def fetch_new_messages(since):
     """fetch all messages from the hub with seq > since.
@@ -29,11 +34,26 @@ def fetch_new_messages(since):
 def post_message(content, budget=None):
     """Post a message to the hub. Returns the assigned seq number, or None on failure.
     If a 429 cap is hit and budget is provided, disables further posting."""
+
+    global _posted_count
     
     is_safe, reason = scan_for_secrets(content)
     if not is_safe:
         print(f"[hub] REFUSED to post: outgoing message looks like a secret leak ({reason})")
         return None
+
+    with _count_lock:
+        if _posted_count >= MAX_RESPONSES_PER_RUN:
+            print(f"[hub] local max_responses_per_run reached ({_posted_count}), not posting")
+            if budget is not None:
+                budget.disable_posting("local max_responses_per_run reached")
+            return None
+
+    if DRY_RUN:
+        with _count_lock:
+            _posted_count += 1
+        print(f"[hub][DRY_RUN] would post (count={_posted_count}/{MAX_RESPONSES_PER_RUN}): {content[:120]}")
+        return -1 
 
     try:
         response = requests.post(
