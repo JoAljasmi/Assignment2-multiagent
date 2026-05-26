@@ -79,6 +79,8 @@ def post_message(content, budget=None):
         print(f"[hub] post returned {response.status_code}: {response.text}")
         return None
     
+    with _count_lock:
+        _posted_count += 1
     return response.json().get("seq")
 
 if __name__ == "__main__":
