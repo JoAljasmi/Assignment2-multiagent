@@ -32,41 +32,51 @@ def execute_tool_call(tool_call):
 
     return f"[error: unknwon tool '{name}']"
 
-def run_agent(user_goal):
-    """Run the agent loop, given a list of messages (user and assistant)"""
-
-    messages = [    
+def run_agent(user_goal, deliver):
+    """
+    Run a ReAct turn. Calls deliver(text) once when the model produces a final
+    user-facing reply. Does not call deliver for internal/harness states.
+    Returns None.
+    """
+    messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user_goal},
     ]
-    session_path = start_session()
-    print(f"session log: {session_path}")
+    session_path = start_session(user_goal)
+    print(f"[agent] session log: {session_path}")
 
-    for iterations in range(MAX_ITERATIONS):
-        assistant_message = chat(messages, tools=TOOLS)
-        print(f"iteration {iterations}:")
-        print("MODEL:", assistant_message)
-        
-        messages.append(assistant_message)
+    for iteration in range(MAX_ITERATIONS):
+        assistant_msg = chat(messages, tools=TOOLS)
+        print(f"\n--- iteration {iteration} ---")
+        print("MODEL:", assistant_msg)
 
-        tool_calls = assistant_message.get("tool_calls")
+        messages.append(assistant_msg)
+
+        tool_calls = assistant_msg.get("tool_calls")
         if not tool_calls:
             save_session(session_path, messages)
-            return assistant_message.get("content", "") or "[empty final reply]"
+            content = assistant_msg.get("content") or ""
+            content = content.strip()
+            if content:
+                deliver(content)
+            return
 
         for tool_call in tool_calls:
             result = execute_tool_call(tool_call)
-            print(f"Tool result: ({tool_call['function']['name']}):", result)
-            messages.append({"role": "tool", "tool_call_id": tool_call["id"], "content": result})
+            print(f"TOOL RESULT ({tool_call['function']['name']}):", result)
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call["id"],
+                "content": result,
+            })
 
         save_session(session_path, messages)
-        
+
     save_session(session_path, messages)
-    return "[max iterations reached]"
+    print("[agent] max iterations reached, no reply delivered")
 
 
 if __name__ == "__main__":
     goal = input("What should the agent do? ")
-    final = run_agent(goal)
-    print("\n=== FINAL ANSWER ===")
-    print(final)
+    print("\n=== AGENT REPLY ===")
+    run_agent(goal, deliver=print)
