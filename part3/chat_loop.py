@@ -20,6 +20,10 @@ def remember(msg):
 
 
 def handle_message(msg):
+    if not budget.is_posting_enabled():
+        print(f"[handle] skipping (posting disabled) | from {msg['agent_name']}: {msg['content'][:60]}")
+        return
+
     try:
         decision = classify(msg, chat_history[:-1], budget=budget)
     except RuntimeError as e:
@@ -50,7 +54,7 @@ def handle_message(msg):
         )
 
     def deliver_to_hub(text):
-        seq = post_message(text)
+        seq = post_message(text, budget=budget)
         if seq is not None:
             print(f"[handle] posted reply, seq={seq}")
         else:

@@ -13,6 +13,7 @@ class Budget:
         self.used_tokens = 0
         self.max_requests_per_minute = max_requests_per_minute
         self._request_times = deque()  # timestamps of recent requests
+        self._posting_enabled = True
         self._lock = threading.Lock()
 
     def check_and_record(self, estimated_tokens=0):
@@ -62,4 +63,15 @@ class Budget:
                 "max_tokens": self.max_tokens,
                 "requests_last_minute": len(self._request_times),
                 "max_requests_per_minute": self.max_requests_per_minute,
+                "posting_enabled": self._posting_enabled,
             }
+    
+    def disable_posting(self, reason):
+        with self._lock:
+            if self._posting_enabled:
+                self._posting_enabled = False
+                return(f"[budget] posting disabled: {reason}")
+
+    def is_posting_enabled(self):
+        with self._lock:
+            return self._posting_enabled

@@ -1,5 +1,6 @@
 import requests
 from config import HUB_URL, HUB_PASSWORD, AGENT_NAME
+from part3 import budget
 from secrets_filter import scan_for_secrets
 
 def fetch_new_messages(since):
@@ -50,6 +51,9 @@ def post_message(content):
     
     if response.status_code == 429:
         print(f"[hub] capped or rate limited: {response.text}")
+        body_text = response.text.lower()
+        if budget is not None and ("cap" in body_text or "limit" in body_text):
+            budget.disable_posting(f"hub returned 429: {response.text[:120]}")
         return None
     if response.status_code != 200:
         print(f"[hub] post returned {response.status_code}: {response.text}")
