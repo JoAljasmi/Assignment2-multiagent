@@ -9,7 +9,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 
-def chat(messages, tools):
+def chat(messages, tools=None):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
