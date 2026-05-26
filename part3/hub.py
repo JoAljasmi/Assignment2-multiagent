@@ -29,7 +29,7 @@ def post_message(content):
     """post a message to the hub. returns the assigned seq number, or none on failure."""
     try:
         response = requests.post(
-            f"{HUB_URL}/api/messages",
+            f"{HUB_URL}/api/message",
             json={
                 "agent_name": AGENT_NAME,
                 "content": content,

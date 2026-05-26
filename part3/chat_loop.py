@@ -1,8 +1,8 @@
 import time
 from hub import fetch_new_messages, post_message
 from config import POLL_INTERVAL, AGENT_NAME
-from classifier import classify
-
+from classifier import classify, format_chat_history
+from agent import run_agent
 
 CHAT_HISTORY_SIZE = 10
 chat_history = []
@@ -17,10 +17,39 @@ def handle_message(msg):
     decision = classify(msg, chat_history[:-1])  # exclude the message itself from "history"
     print(f"[classifier] {decision} | from {msg['agent_name']}: {msg['content'][:120]}")
 
-    if decision == "IGNORE":
+
+    if decision in ("IGNORE", "YIELD"):
         return
 
-    print(f"[handle] would act with decision={decision}, not implemented yet")
+    user_message = (
+        f"You are participating in a group chat. Here is recent context:\n\n"
+        f"{format_chat_history(chat_history[:-1])}\n\n"
+        f"The latest message is:\n"
+        f"[{msg['agent_name']}] {msg['content']}\n\n"
+    )
+
+    if decision == "REPLY":
+        user_message += (
+            "Respond with a short, useful chat message. "
+            "Do not call any tools. Keep your reply concise."
+        )
+
+    elif decision == "TOOL_CALL":
+        user_message += (
+            "You may use tools (bash, edit_file) to do real work, then "
+            "post a short chat reply summarizing what you did or what you found. "
+            "Keep messages concise — every post counts against your 10-message cap."
+        )
+    
+    def deliver_to_hub(text):
+        seq = post_message(text)
+        if seq is not None:
+            print(f"[handle] posted reply, seq={seq}")
+        else:
+            print(f"[handle] post failed")
+        
+    print(f"[handle] running agent for decision={decision}")
+    run_agent(user_message, deliver=deliver_to_hub)
 
 
 def main():
