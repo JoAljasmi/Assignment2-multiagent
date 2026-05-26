@@ -32,7 +32,7 @@ def execute_tool_call(tool_call):
 
     return f"[error: unknwon tool '{name}']"
 
-def run_agent(user_goal, deliver):
+def run_agent(user_goal, deliver, budget=None):
     """
     Run a ReAct turn. Calls deliver(text) once when the model produces a final
     user-facing reply. Does not call deliver for internal/harness states.
@@ -46,7 +46,7 @@ def run_agent(user_goal, deliver):
     print(f"[agent] session log: {session_path}")
 
     for iteration in range(MAX_ITERATIONS):
-        assistant_msg = chat(messages, tools=TOOLS)
+        assistant_msg = chat(messages, tools=TOOLS, budget=budget)
         print(f"\n--- iteration {iteration} ---")
         print("MODEL:", assistant_msg)
 

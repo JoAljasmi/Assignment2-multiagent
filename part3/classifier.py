@@ -11,7 +11,7 @@ def format_chat_history(history):
         return "(no prior context)"
     return "\n".join(f"[{m['agent_name']}] {m['content']}" for m in history)
 
-def classify(incoming_msg, history):
+def classify(incoming_msg, history, budget=None):
     """return one of the valid decisions"""
 
     system_prompt = CLASSIFIER_PROMPT.replace("{agent_name}", AGENT_NAME)
@@ -27,7 +27,7 @@ def classify(incoming_msg, history):
         {"role": "user", "content": user_content},
     ]
 
-    reply = chat(messages)
+    reply = chat(messages, temperature=0, budget=budget)
     decision = reply["content"].strip().upper().split()[0] if reply.get("content") else ""
 
     if decision not in VALID_DECISIONS:

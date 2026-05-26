@@ -39,3 +39,7 @@ POLL_INTERVAL = _config["hub"]["poll_interval_seconds"]
 _classifier = _config["classifier_prompt"]
 CLASSIFIER_PROMPT_RAW = "\n".join(_classifier) if isinstance(_classifier, list) else _classifier
 CLASSIFIER_PROMPT = CLASSIFIER_PROMPT_RAW.replace("{max_output_chars}", str(MAX_OUTPUT_CHARS))
+
+#tokens
+MAX_TOKENS_DEFAULT = _config["agent"]["max_tokens_default"]
+MAX_REQUESTS_PER_MINUTE_DEFAULT = _config["agent"]["max_requests_per_minute_default"]
