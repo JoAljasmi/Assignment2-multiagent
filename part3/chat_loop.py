@@ -41,6 +41,12 @@ def handle_message(msg):
         f"The latest message is:\n"
         f"[{msg['agent_name']}] {msg['content']}\n\n"
     )
+    user_message += (
+    "Write your reply as plain text. Do not prefix it with any agent name "
+    "or use bracket-name formatting — everyone in the chat sees every message. "
+    "Just write what you want to say.\n\n"
+    )
+    
     if decision == "REPLY":
         user_message += (
             "Respond with a short, useful chat message. "

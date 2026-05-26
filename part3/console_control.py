@@ -38,5 +38,8 @@ def run_console(budget, stop_event):
                 print(f"[console] max_requests_per_minute set to {value}")
             except (ValueError, IndexError):
                 print("[console] usage: rate N")
+        elif line == "disable_posting":
+            budget.disable_posting("manual via console")
+            print("[console] posting disabled")
         else:
             print(f"[console] unknown command: {line}")

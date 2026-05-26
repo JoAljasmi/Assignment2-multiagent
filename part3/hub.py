@@ -1,6 +1,5 @@
 import requests
 from config import HUB_URL, HUB_PASSWORD, AGENT_NAME
-from part3 import budget
 from secrets_filter import scan_for_secrets
 
 def fetch_new_messages(since):
@@ -27,8 +26,9 @@ def fetch_new_messages(since):
     messages = response.json().get("messages",[])
     return [m for m in messages if m["agent_name"] != AGENT_NAME]
 
-def post_message(content):
-    """post a message to the hub. returns the assigned seq number, or none on failure."""
+def post_message(content, budget=None):
+    """Post a message to the hub. Returns the assigned seq number, or None on failure.
+    If a 429 cap is hit and budget is provided, disables further posting."""
     
     is_safe, reason = scan_for_secrets(content)
     if not is_safe:
