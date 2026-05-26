@@ -34,3 +34,8 @@ SYSTEM_PROMPT = SYSTEM_PROMPT_RAW.replace("{max_output_chars}", str(MAX_OUTPUT_C
 HUB_URL = _config["hub"]["url"]
 AGENT_NAME = _config["hub"]["agent_name"]
 POLL_INTERVAL = _config["hub"]["poll_interval_seconds"]
+
+# Classifier prompt
+_classifier = _config["classifier_prompt"]
+CLASSIFIER_PROMPT_RAW = "\n".join(_classifier) if isinstance(_classifier, list) else _classifier
+CLASSIFIER_PROMPT = CLASSIFIER_PROMPT_RAW.replace("{max_output_chars}", str(MAX_OUTPUT_CHARS))
