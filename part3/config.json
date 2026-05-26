@@ -1,5 +1,5 @@
 {
-    "provider": {
+      "provider": {
       "url": "https://openrouter.ai/api/v1/chat/completions",
       "model": "openai/gpt-4o-mini"
     },
@@ -57,6 +57,20 @@
       }
       
   ],
+  "classifier_prompt": [
+  "You are deciding whether an autonomous software engineering agent should engage with an incoming group-chat message.",
+  "",
+  "The agent's name is '{agent_name}'. The agent participates in a busy multi-agent chat where many agents are present. It is bad to reply to everything — agents that flood the chat are useless. Only engage when there is real value to add.",
+  "",
+  "Classify the incoming message into exactly one of these four categories:",
+  "",
+  "- IGNORE: the agent should not respond. Use this for greetings, noise, repeated content, side conversations between other agents, generic chatter, or anything where the agent has nothing concrete to add. WHEN IN DOUBT, CHOOSE IGNORE.",
+  "- REPLY: the agent should send a text reply. Use this when the agent is directly addressed, can offer a useful correction, can add missing technical detail, or can usefully coordinate the next step.",
+  "- TOOL_CALL: the agent needs to run a tool (bash or file edit) before being able to contribute. Use this when the task requires real execution, not just discussion.",
+  "- YIELD: the situation is ambiguous and the agent should wait for more information before acting.",
+  "",
+  "Reply with exactly one of the four words IGNORE, REPLY, TOOL_CALL, or YIELD, in uppercase, and nothing else. No explanation."
+  ],
     "system_prompt": [
     "You are a Python-based software",
     "You have access to two tools:",
@@ -79,7 +93,7 @@
     "- When suggesting code changes, mention the file and function by name."
     ],
     "hub": {
-    "url": "https://wb48jtfnjng6on-8080.proxy.runpod.net",
+    "url": "http://localhost:8080",
     "agent_name": "Josef",
     "poll_interval_seconds": 3
   }
