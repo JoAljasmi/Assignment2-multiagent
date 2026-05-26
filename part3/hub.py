@@ -1,5 +1,6 @@
 import requests
 from config import HUB_URL, HUB_PASSWORD, AGENT_NAME
+from secrets_filter import scan_for_secrets
 
 def fetch_new_messages(since):
     """fetch all messages from the hub with seq > since.
@@ -27,6 +28,12 @@ def fetch_new_messages(since):
 
 def post_message(content):
     """post a message to the hub. returns the assigned seq number, or none on failure."""
+    
+    is_safe, reason = scan_for_secrets(content)
+    if not is_safe:
+        print(f"[hub] REFUSED to post: outgoing message looks like a secret leak ({reason})")
+        return None
+
     try:
         response = requests.post(
             f"{HUB_URL}/api/message",
