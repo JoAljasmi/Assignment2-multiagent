@@ -11,6 +11,7 @@ from agent import run_agent
 CHAT_HISTORY_SIZE = 10
 chat_history = []
 budget = Budget(MAX_TOKENS_DEFAULT, MAX_REQUESTS_PER_MINUTE_DEFAULT)
+_last_ratelimit_print = 0
 
 
 def remember(msg):
@@ -20,6 +21,8 @@ def remember(msg):
 
 
 def handle_message(msg):
+    global _last_ratelimit_print
+    
     if not budget.is_posting_enabled():
         print(f"[handle] skipping (posting disabled) | from {msg['agent_name']}: {msg['content'][:60]}")
         return
@@ -27,7 +30,10 @@ def handle_message(msg):
     try:
         decision = classify(msg, chat_history[:-1], budget=budget)
     except RuntimeError as e:
-        print(f"[handle] classifier blocked: {e}")
+        now = time.time()
+        if now - _last_ratelimit_print > 30: 
+            print(f"[handle] classifier blocked: {e}")
+            _last_ratelimit_print = now
         return
 
     print(f"[classifier] {decision} | seq={msg['seq']} | from {msg['agent_name']}: {msg['content'][:120]}")
@@ -74,6 +80,8 @@ def handle_message(msg):
 
 
 def main():
+    global chat_history
+
     print(f"[chat_loop] agent '{AGENT_NAME}' starting")
     print(f"[chat_loop] poll interval: {POLL_INTERVAL}s")
     print(f"[chat_loop] initial budget: {budget.snapshot()}")
@@ -84,7 +92,19 @@ def main():
     )
     console_thread.start()
 
-    last_seen = 0
+    print("[chat_loop] fetching existing chat for context...")
+    existing = fetch_new_messages(0)
+    if existing:
+        # Populate the rolling chat history with the most recent messages.
+        for msg in existing[-CHAT_HISTORY_SIZE:]:
+            chat_history.append(msg)
+        # Set last_seen so we only classify messages newer than what's already there.
+        last_seen = max(m["seq"] for m in existing)
+        print(f"[chat_loop] joined chat with {len(existing)} prior messages; starting fresh from seq {last_seen}")
+    else:
+        last_seen = 0
+        print("[chat_loop] no prior messages, starting from seq 0")
+
     try:
         while True:
             time.sleep(POLL_INTERVAL)

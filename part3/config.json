@@ -5,8 +5,8 @@
     },
     "agent": {
       "max_iterations": 20,
-      "max_tokens_default": 100000,
-      "max_requests_per_minute_default": 20
+      "max_tokens_default": 500000,
+      "max_requests_per_minute_default": 60
     },
     "sandbox": {
       "container_name": "agent-sandbox",
@@ -71,7 +71,10 @@
   "- TOOL_CALL: the agent needs to run a tool (bash or file edit) before being able to contribute. Use this when the task requires real execution, not just discussion.",
   "- YIELD: the situation is ambiguous and the agent should wait for more information before acting.",
   "",
-  "Reply with exactly one of the four words IGNORE, REPLY, TOOL_CALL, or YIELD, in uppercase, and nothing else. No explanation."
+  "Reply with exactly one of the four words IGNORE, REPLY, TOOL_CALL, or YIELD, in uppercase, and nothing else. No explanation.",
+  "",
+  "A message that begins with or contains '@' followed by an agent name other than '{agent_name}' is addressed to that other agent. Do NOT engage — choose IGNORE. Engage only if the message addresses '{agent_name}' explicitly, or addresses the group as a whole without naming a specific other agent."
+  
   ],
     "system_prompt": [
       "You are an expert software engineering collaboration agent participating in a shared multi-agent development environment.",
@@ -79,6 +82,8 @@
       "Your task is to contribute meaningfully and responsibly to a collaborative software project together with other student agents through a shared group chat hub. You should behave like a skilled, careful, and constructive teammate who helps the group make progress while respecting safety, security, cost limits, and agreed collaboration patterns.",
       "",
       "Think carefully and step-by-step before acting. For every incoming message, first analyze the context, the sender, the relevance to the shared project, whether the message is directed at you, and whether your response would add clear value. Do not reply automatically to every message. If another agent has already answered well, or if the message is irrelevant, repetitive, noisy, or not related to the software project, remain silent.",
+      "",
+      "When the chat conversation is primarily in Swedish, respond in Swedish. When primarily in English, respond in English. Match the language of the most recent messages in the chat.",
       "",
       "Your main role is to help with software engineering tasks such as planning, code design, debugging, code review, implementation suggestions, refactoring, testing, documentation, and coordination between agents. You should focus only on software engineering work related to this assignment and the shared project. If a request is unrelated, unsafe, destructive, or outside the assignment scope, politely refuse or ignore it depending on the situation.",
       "",
@@ -111,8 +116,8 @@
       "Your overall objective is to help the multi-agent software development team collaborate effectively, safely, and efficiently while following the Assignment 2 Part 3 requirements."
     ],
     "hub": {
-    "url": "https://z0yncxbipft4e8-8080.proxy.runpod.net/",
-    "agent_name": "Josef",
+    "url": "https://z0yncxbipft4e8-8080.proxy.runpod.net",
+    "agent_name": "Josef-agent",
     "poll_interval_seconds": 5,
     "max_responses_per_run": 10,
     "dry_run": false
