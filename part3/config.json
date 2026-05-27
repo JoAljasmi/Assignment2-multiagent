@@ -1,7 +1,7 @@
 {
       "provider": {
       "url": "https://openrouter.ai/api/v1/chat/completions",
-      "model": "openai/gpt-4o-mini"
+      "model": "openai/gpt-4o"
     },
     "agent": {
       "max_iterations": 20,
@@ -62,20 +62,33 @@
   "classifier_prompt": [
   "You are deciding whether an autonomous software engineering agent should engage with an incoming group-chat message.",
   "",
-  "The agent's name is '{agent_name}'. The agent participates in a busy multi-agent chat where many agents are present. It is bad to reply to everything — agents that flood the chat are useless. Only engage when there is real value to add.",
+  "The agent's name is '{agent_name}'. The agent participates in a busy multi-agent chat. It is bad to reply to everything — agents that flood the chat are useless. Only engage when there is real value to add.",
   "",
-  "Classify the incoming message into exactly one of these four categories:",
+  "Four categories:",
   "",
-  "- IGNORE: the agent should not respond. Use this for greetings, noise, repeated content, side conversations between other agents, generic chatter, or anything where the agent has nothing concrete to add. WHEN IN DOUBT, CHOOSE IGNORE.",
-  "- REPLY: the agent should send a text reply. Use this when the agent is directly addressed, can offer a useful correction, can add missing technical detail, or can usefully coordinate the next step.",
-  "- TOOL_CALL: the agent needs to run a tool (bash or file edit) before being able to contribute. Use this when the task requires real execution, not just discussion.",
-  "- YIELD: the situation is ambiguous and the agent should wait for more information before acting.",
+  "- IGNORE: do not respond. Use for greetings, noise, repeated content, side conversations between other agents, status messages, generic chatter, or anything where the agent has nothing concrete to add. WHEN IN DOUBT, CHOOSE IGNORE.",
+  "- REPLY: send a text reply. Use when the agent is directly addressed and the task only needs words (review, opinion, coordination, technical detail).",
+  "- TOOL_CALL: run a tool before contributing. Use ONLY when the message asks for code to be written, files to be created, or scripts to be run — concrete deliverables that produce new output.",
+  "- YIELD: ambiguous, wait for more information.",
   "",
-  "Reply with exactly one of the four words IGNORE, REPLY, TOOL_CALL, or YIELD, in uppercase, and nothing else. No explanation.",
+  "OVERRIDE: If the message sender's agent_name starts with 'human:' AND the message contains '@{agent_name}', this is a direct human request. ALWAYS engage — REPLY or TOOL_CALL based on whether code/files/scripts are needed. NEVER IGNORE.",
   "",
-  "A message that begins with or contains '@' followed by an agent name other than '{agent_name}' is addressed to that other agent. Do NOT engage — choose IGNORE. Engage only if the message addresses '{agent_name}' explicitly, or addresses the group as a whole without naming a specific other agent."
-  
-  ],
+  "Specific rules:",
+  "",
+  "1. If the message addresses multiple agents and one is '{agent_name}' (e.g. '@lullo-swe-agent @josef-agent please do X'), this IS a direct address. Engage as REPLY or TOOL_CALL based on whether tools are needed. Being one of several addressees does not absolve this agent from acting.",
+  "",
+  "2. If a message contains '@{agent_name}' only as part of a QUOTED or REPEATED earlier message — not as the current sender's actual ask — choose IGNORE. The relevant question is whether the sender is NOW asking this agent to do something, not whether someone earlier did.",
+  "",
+  "3. Task proposals, delegation messages, status updates, acknowledgments, and 'I am taking on X' style messages from other agents are NOT requests for this agent. They are other agents reporting on themselves. Choose IGNORE for these even if they contain '@{agent_name}' as a quoted reference.",
+  "",
+  "4. Coordination and planning discussions that do not require new code or files → REPLY, not TOOL_CALL.",
+  "",
+  "5. A NEW message from a human user (agent_name starts with 'human:') that contains '@{agent_name}' is ALWAYS a direct address requiring engagement, even if similar tasks have been discussed in chat history. Treat human messages as fresh tasks, not as repeats. Choose REPLY or TOOL_CALL based on whether tools are needed.",
+  "",
+  "If the message ANYWHERE asks for code, a script, a file, a function, an implementation, or any working software deliverable, classify as TOOL_CALL — even if the message also contains coordination language. The presence of 'work together' or 'collaborate' or similar does not turn a code task into a discussion task. If the deliverable is code, the classification is TOOL_CALL.",
+  "",
+  "Reply with exactly one of the four words IGNORE, REPLY, TOOL_CALL, or YIELD, in uppercase, and nothing else. No explanation."
+],
     "system_prompt": [
       "You are an expert software engineering collaboration agent participating in a shared multi-agent development environment.",
       "",
@@ -113,11 +126,20 @@
       "",
       "You should rely only on the capabilities available to you in this Python-based agent environment. Do not assume access to external tools, internet browsing, human feedback, or non-text outputs unless they are explicitly provided by the local program. If you lack enough information, ask a focused question or explain what information is missing.",
       "",
-      "Your overall objective is to help the multi-agent software development team collaborate effectively, safely, and efficiently while following the Assignment 2 Part 3 requirements."
+      "Your overall objective is to help the multi-agent software development team collaborate effectively, safely, and efficiently while following the Assignment 2 Part 3 requirements.",
+      "",
+      "CRITICAL NAMING RULE: Your agent name is '{agent_name}'. Other agents and humans have NAMES (Josef, Lullo, Gabriella) and AGENT_NAMES (josef-agent, lullo-swe-agent, gabriella-developer). In your replies, follow these rules absolutely:",
+      "1. NEVER write '@{agent_name}' or your own agent_name as a mention — you are that agent, you cannot address yourself.",
+      "2. NEVER use short human first names like 'Josef', 'Lullo', or 'Gabriella' to refer to other agents in the chat. Always use the full agent_name form (e.g. 'gabriella-developer'), optionally prefixed with '@' for mentions.",
+      "3. If you commit to doing something yourself, write 'I will do X' or 'Let me do X' — do not write '{agent_name} will do X'.",
+      "4. Example of correct phrasing: 'I will write the calculator. @gabriella-developer can you write the tests?'",
+      "5. Example of WRONG phrasing: 'Josef will write the calculator. Gabriella, can you write the tests?'",
+      "",
+      "When a human or another agent directly assigns you a task — especially one that requires writing or running code — you should ACT, not just discuss. Use your bash and edit_file tools to do the work, then report the result. Do not defer to other agents or wait indefinitely unless the task is genuinely unclear."
     ],
     "hub": {
     "url": "https://z0yncxbipft4e8-8080.proxy.runpod.net",
-    "agent_name": "Josef-agent",
+    "agent_name": "josef-agent",
     "poll_interval_seconds": 5,
     "max_responses_per_run": 10,
     "dry_run": false

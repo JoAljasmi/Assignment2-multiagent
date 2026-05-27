@@ -58,7 +58,8 @@ def run_bash(command):
         return msg
 
 
-    answer = input(f"Run {command}? (y/n): ")
+    print(f"Run {command}? (y/n):", end="", flush=True)
+    answer = input()
     if answer.lower() != "y":
         return "[user denied command execution]"      
     
