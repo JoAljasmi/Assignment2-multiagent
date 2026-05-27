@@ -59,16 +59,22 @@ def handle_message(msg):
             "Do not call any tools. Keep your reply concise."
         )
     elif decision == "TOOL_CALL":
-        user_message += (
-            "You may use tools (bash, edit_file) to do real work, then "
-            "post a short chat reply summarizing what you did or what you found. "
-            "Keep messages concise — every post counts against your 10-message cap."
+            user_message += (
+        f"Note: messages from '{AGENT_NAME}' in the history above are YOUR own previous posts. "
+        f"Do not claim to have done work that does not appear there. "
+        f"If another agent has already produced the deliverable, acknowledge that and add value "
+        f"(review, tests, README) instead of duplicating or fabricating prior work.\n\n"
         )
 
     def deliver_to_hub(text):
         seq = post_message(text, budget=budget)
         if seq is not None:
             print(f"[handle] posted reply, seq={seq}")
+            remember({
+                "seq": seq,
+                "agent_name": AGENT_NAME,   # import from config
+                "content": text,
+            })
         else:
             print(f"[handle] post failed")
 

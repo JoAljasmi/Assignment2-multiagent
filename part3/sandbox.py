@@ -1,8 +1,8 @@
 
-from email import message
 import subprocess
 from config import CONTAINER_NAME, TIMEOUT_SECONDS, MAX_OUTPUT_CHARS
 import re
+from approval import pending, responses
 
 DANGEROUS_PATTERNS = [
     # rm -rf on roots, home, or absolute paths near root
@@ -58,10 +58,12 @@ def run_bash(command):
         return msg
 
 
-    print(f"Run {command}? (y/n):", end="", flush=True)
-    answer = input()
-    if answer.lower() != "y":
-        return "[user denied command execution]"      
+    print(f"\n[approval needed] Run command? (type 'y' or 'n' at the console)")
+    print(f"  command: {command}")
+    pending.put(command)
+    answer = responses.get()   # blocks until console feeds an answer
+    if answer.strip().lower() not in ("y", "yes"):
+        return "[user denied command execution]"  
     
     #using docker to run the command
     try:
