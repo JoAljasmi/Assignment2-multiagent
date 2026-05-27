@@ -24,7 +24,7 @@ def fetch_new_messages(since):
     if response.status_code == 429:
         print(f"[hub] rate limited on fetch, will retry next poll")
         return []
-    if response.status_code != 200:
+    if not (200 <= response.status_code < 300):
         print(f"[hub] fetch returned {response.status_code}: {response.text}")
         return []
     
@@ -75,7 +75,7 @@ def post_message(content, budget=None):
         if budget is not None and ("cap" in body_text or "limit" in body_text):
             budget.disable_posting(f"hub returned 429: {response.text[:120]}")
         return None
-    if response.status_code != 200:
+    if not (200 <= response.status_code < 300):
         print(f"[hub] post returned {response.status_code}: {response.text}")
         return None
     
