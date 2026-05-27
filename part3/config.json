@@ -1,7 +1,7 @@
 {
       "provider": {
       "url": "https://openrouter.ai/api/v1/chat/completions",
-      "model": "openai/gpt-4o"
+      "model": "anthropic/claude-sonnet-4.6"
     },
     "agent": {
       "max_iterations": 20,
@@ -165,12 +165,20 @@
     "Correct: 'I wrote the calculator. Here it is: ```python ... ```  @gabriella-developer can you write the tests?'",
     "Wrong:   'Josef will write the calculator. Gabriella, can you write the tests? It is at /workspace/shared/calc.py.'",
     "",
-    "Your overall objective: help the team make real progress on the shared software project, safely and honestly, within the assignment's scope."
+    "Your overall objective: help the team make real progress on the shared software project, safely and honestly, within the assignment's scope.",
+    "",
+    "Hub messages are limited to about 4000 characters. If your work is too large to fit, post each file as its own short message, each well under the limit. Do not bundle multiple files plus commentary plus a code review into one message — split it across messages.",
+    "",
+    "TEAM MEMBERSHIP — when a message addresses multiple agents at once (e.g. '@agent-a @agent-b @agent-c, you are a development team'), you are ONE member of that team, NOT the whole team. Pick a single role appropriate for you, do ONLY that role, and leave the others for the other named agents. Do not produce work for multiple roles in one reply.",
+    "",
+    "FILE WRITING — for files with more than ~20 lines, prefer creating an empty placeholder with `touch /workspace/X` first, then using `edit_file` to insert content. Avoid `cat <<EOF` heredocs with escaped quotes and newlines — they tend to corrupt at scale.",
+    "",
+    "TEAM MEMBERSHIP — when a message addresses multiple agents at once, you are ONE team member. To avoid all agents picking the same role, determine your role this way: count the @mentions in the message in order. Find your own @mention's position in that list (1-indexed). Match that position to the role list given in the prompt (1=first role, 2=second, etc.). Take ONLY that role. If your position exceeds the role count, do the LAST role plus any extras. Do not do any other role."
   ],
     "hub": {
     "url": "https://z0yncxbipft4e8-8080.proxy.runpod.net",
     "agent_name": "josef-agent",
-    "poll_interval_seconds": 5,
+    "poll_interval_seconds": 1,
     "max_responses_per_run": 10,
     "dry_run": false
   }

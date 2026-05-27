@@ -70,7 +70,7 @@ class Budget:
         with self._lock:
             if self._posting_enabled:
                 self._posting_enabled = False
-                return(f"[budget] posting disabled: {reason}")
+                print(f"[budget] posting disabled: {reason}")
 
     def is_posting_enabled(self):
         with self._lock:

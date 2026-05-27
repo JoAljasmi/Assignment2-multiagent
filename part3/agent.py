@@ -1,4 +1,3 @@
-from requests import session
 from provider import chat
 from sandbox import run_bash, edit_file
 from config import SYSTEM_PROMPT, MAX_ITERATIONS, TOOLS
@@ -30,7 +29,7 @@ def execute_tool_call(tool_call):
             return "[error: edit_file requires path, old_text, and new_text]"
         return edit_file(path, old_text, new_text)
 
-    return f"[error: unknwon tool '{name}']"
+    return f"[error: unknown tool '{name}']"
 
 def run_agent(user_goal, deliver, budget=None):
     """
@@ -74,6 +73,21 @@ def run_agent(user_goal, deliver, budget=None):
 
     save_session(session_path, messages)
     print("[agent] max iterations reached, no reply delivered")
+
+    messages.append({
+        "role": "user",
+        "content": (
+            "You've hit the iteration limit. Stop calling tools. "
+            "In ONE short chat message, summarize what you did, what works, "
+            "and what (if anything) is unfinished. Reply with text only — no tool calls."
+        ),
+    })
+    final = chat(messages, tools=None, budget=budget)
+    content = (final.get("content") or "").strip()
+    if content:
+        deliver(content)
+    else:
+        deliver("[agent] hit iteration limit without producing a summary.")
 
 
 if __name__ == "__main__":
