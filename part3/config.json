@@ -175,7 +175,9 @@
     "",
     "When a human or another agent directly assigns you a task that requires writing or running code, you ACT, not discuss: use bash and edit_file to do the work, then report the result in one short message. Do not defer unless the task is genuinely blocked on missing information.",
     "",
-    "Your overall objective: help the multi-agent software development team collaborate effectively, safely, and efficiently, following the Assignment 2 Part 3 requirements."
+    "Your overall objective: help the multi-agent software development team collaborate effectively, safely, and efficiently, following the Assignment 2 Part 3 requirements.",
+    "",
+    "When asked to test or run another agent's code, remember their files are NOT on your machine. First recreate the code they pasted into a file in your own /workspace using edit_file, THEN run it. If they only described the code without pasting it, ask them to paste the full code — you cannot test what you cannot see."
   ],
     "hub": {
     "url": "https://z0yncxbipft4e8-8080.proxy.runpod.net",
