@@ -7,6 +7,7 @@ from console_control import run_console
 from classifier import classify, format_chat_history
 from agent import run_agent
 from provider import chat
+import re
 
 
 CHAT_HISTORY_SIZE = 10
@@ -16,11 +17,15 @@ chat_history = []
 budget = Budget(MAX_TOKENS_DEFAULT, MAX_REQUESTS_PER_MINUTE_DEFAULT)
 _last_ratelimit_print = 0
 current_role_set_at = None 
+_multipart_buffer = {}
+_PART_RE = re.compile(r"^\(part\s+(\d+)\s*/\s*(\d+)\)\s*\n?", re.IGNORECASE)
 
 # Team-task state. Set when we claim a role; persists across messages.
 current_role = None        # e.g. "developer", "critic", "supervisor"
 current_waits_for = None   # role we depend on, or None if we work first/independently
 current_role_set_at = None 
+
+
 
 def remember(msg):
     chat_history.append(msg)
@@ -31,6 +36,45 @@ def history_for_llm():
     """Return chat history sorted by seq, excluding the just-added entry."""
     return sorted(chat_history[:-1], key=lambda m: m.get("seq", 0))
 
+def reassemble_multipart(msg):
+    """Given an incoming message, handle multi-part reassembly.
+
+    Returns:
+      - a NEW message dict with combined content if this completes a multipart set
+      - the original msg if it's a normal (non-part) message
+      - None if it's a partial piece and we're still waiting for more parts
+    """
+    content = msg["content"]
+    m = _PART_RE.match(content)
+    if not m:
+        return msg  # not a multipart message, pass through unchanged
+
+    part_num = int(m.group(1))
+    total = int(m.group(2))
+    body = content[m.end():]  # strip the "(part N/M)" prefix
+
+    sender = msg["agent_name"]
+    entry = _multipart_buffer.setdefault(sender, {"parts": {}, "total": total})
+    entry["total"] = total
+    entry["parts"][part_num] = body
+
+    print(f"[multipart] buffered part {part_num}/{total} from {sender} "
+          f"({len(entry['parts'])}/{total} collected)")
+
+    if len(entry["parts"]) < total:
+        return None  # still waiting for more parts
+
+    # We have all parts — reassemble in order.
+    combined = "\n\n".join(entry["parts"][i] for i in sorted(entry["parts"]))
+    del _multipart_buffer[sender]
+    print(f"[multipart] reassembled {total} parts from {sender}")
+
+    # Build a synthetic message carrying the full content, using the LAST part's seq.
+    return {
+        "seq": msg["seq"],
+        "agent_name": sender,
+        "content": combined,
+    }
 
 def split_for_hub(text, max_chars):
     """Split text into chunks <= max_chars, preferring paragraph/line boundaries."""
@@ -164,6 +208,11 @@ def is_my_turn_now(msg, waits_for, budget=None):
 
 def build_wake_message(trigger_msg, role, waited_for):
     """Build the user message for run_agent when our turn arrives."""
+    
+    trigger_content = trigger_msg["content"]
+    if len(trigger_content) > 8000:
+        trigger_content = trigger_content[:8000] + "\n\n[...truncated, see full message in chat...]"
+
     return (
         f"You are participating in a group chat as '{AGENT_NAME}'. "
         f"You were earlier assigned the role of '{role}', waiting for the {waited_for} to post first. "
@@ -308,8 +357,13 @@ def main():
             time.sleep(POLL_INTERVAL)
             new_messages = fetch_new_messages(last_seen)
             for msg in new_messages:
-                remember(msg)
-                handle_message(msg)
+                remember(msg)               # still remember the raw part for history
+                full = reassemble_multipart(msg)
+                if full is None:
+                    # partial piece; wait for the rest before acting
+                    last_seen = max(last_seen, msg["seq"])
+                    continue
+                handle_message(full)        # act on the complete (possibly reassembled) message
                 last_seen = max(last_seen, msg["seq"])
     except KeyboardInterrupt:
         print("\n[chat_loop] shutting down")
