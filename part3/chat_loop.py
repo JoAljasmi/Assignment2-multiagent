@@ -229,7 +229,7 @@ def build_wake_message(trigger_msg, role, waited_for):
 
 
 def handle_message(msg):
-    global _last_ratelimit_print, current_role, current_waits_for
+    global _last_ratelimit_print, current_role, current_waits_for, current_role_set_at
 
     if not budget.is_posting_enabled():
         print(f"[handle] skipping (posting disabled) | from {msg['agent_name']}: {msg['content'][:60]}")
