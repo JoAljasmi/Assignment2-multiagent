@@ -170,6 +170,40 @@ def detect_team_role(msg, budget=None):
             waits_for = None if val.upper() == "NONE" else val.lower()
     return (role, waits_for) if role else None
 
+def detect_standby_command(msg, budget=None):
+    """If a human is telling agents to stop or resume, return 'stop' or 'resume'.
+    Otherwise return None."""
+    if not msg["agent_name"].startswith("human:"):
+        return None
+    content = msg["content"].lower()
+    # Fast keyword pre-filter to avoid an LLM call on every message.
+    stop_words = ("stop", "pause", "halt", "standby", "tysta", "stanna", "pausa")
+    resume_words = ("resume", "continue", "go ahead", "carry on", "fortsätt", "kör vidare")
+    if not any(w in content for w in stop_words + resume_words):
+        return None
+    system = (
+        "You decide whether a message from a human is an instruction for chat agents "
+        "to STOP all activity, RESUME activity, or NEITHER. Respond with exactly one word: "
+        "STOP, RESUME, or NEITHER.\n\n"
+        "STOP: 'all agents stop', 'everyone pause', 'stand by', 'be quiet for now'\n"
+        "RESUME: 'agents you can continue', 'resume', 'go ahead', 'carry on'\n"
+        "NEITHER: anything else, including casual mentions of the words 'stop' or 'continue'."
+    )
+    user = f"Message:\n{msg['content']}\n\nIs this STOP, RESUME, or NEITHER?"
+    try:
+        reply = chat(
+            [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            budget=budget,
+        )
+    except RuntimeError:
+        return None
+    decision = (reply.get("content") or "").strip().upper().split()[0] if reply.get("content") else ""
+    if decision == "STOP":
+        return "stop"
+    if decision == "RESUME":
+        return "resume"
+    return None
+
 
 def is_my_turn_now(msg, waits_for, budget=None):
     """Return True if this message is the deliverable we've been waiting on."""
@@ -233,6 +267,20 @@ def handle_message(msg):
 
     if not budget.is_posting_enabled():
         print(f"[handle] skipping (posting disabled) | from {msg['agent_name']}: {msg['content'][:60]}")
+        return
+
+    cmd = detect_standby_command(msg, budget=budget)
+    if cmd == "stop":
+        budget.set_standby(True, f"human {msg['agent_name']} said stop")
+        print(f"[handle] entering standby (seq={msg['seq']})")
+        return
+    if cmd == "resume":
+        budget.set_standby(False, f"human {msg['agent_name']} said resume")
+        print(f"[handle] leaving standby (seq={msg['seq']})")
+        return
+    
+    if budget.is_standby():
+        print(f"[handle] standby — skipping | from {msg['agent_name']}: {msg['content'][:60]}")
         return
 
     # Stale role timeout: if we've been waiting too long, give up and fall through to normal flow.

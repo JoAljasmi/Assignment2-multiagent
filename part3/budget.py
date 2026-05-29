@@ -11,6 +11,7 @@ class Budget:
     def __init__(self, max_tokens, max_requests_per_minute):
         self.max_tokens = max_tokens
         self.used_tokens = 0
+        self._standby = False
         self.max_requests_per_minute = max_requests_per_minute
         self._request_times = deque()  # timestamps of recent requests
         self._posting_enabled = True
@@ -42,6 +43,15 @@ class Budget:
             self._request_times.append(now)
             return True, ""
 
+    def set_standby(self, on, reason=""):
+        with self._lock:
+            self._standby = on
+            print(f"[budget] standby {'ENABLED' if on else 'DISABLED'}: {reason}")
+
+    def is_standby(self):
+        with self._lock:
+            return self._standby
+
     def add_usage(self, tokens):
         """Record actual tokens consumed by a completed call."""
         with self._lock:
@@ -64,6 +74,7 @@ class Budget:
                 "requests_last_minute": len(self._request_times),
                 "max_requests_per_minute": self.max_requests_per_minute,
                 "posting_enabled": self._posting_enabled,
+                "standby": self._standby,
             }
     
     def disable_posting(self, reason):

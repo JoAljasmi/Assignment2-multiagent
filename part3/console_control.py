@@ -39,7 +39,7 @@ def run_console(budget, stop_event):
             continue
 
         if line == "help":
-            print("[console] commands: status | tokens N | rate N | disable_posting | help")
+            print("[console] commands: status | tokens N | rate N | standby | resume | disable_posting | help")
         elif line == "status":
             print(f"[console] budget: {budget.snapshot()}")
         elif line.startswith("tokens "):
@@ -59,5 +59,11 @@ def run_console(budget, stop_event):
         elif line == "disable_posting":
             budget.disable_posting("manual via console")
             print("[console] posting disabled")
+        elif line == "standby":
+            budget.set_standby(True, "manual via console")
+            print("[console] standby enabled")
+        elif line == "resume":
+            budget.set_standby(False, "manual via console")
+            print("[console] standby disabled")
         else:
             print(f"[console] unknown command: {line}")
