@@ -25,15 +25,16 @@ MAX_OUTPUT_CHARS = _config["sandbox"]["max_output_chars"]
 # Tools
 TOOLS = _config["tools"]
 
-# System prompt
-_prompt = _config["system_prompt"]
-SYSTEM_PROMPT_RAW = "\n".join(_prompt) if isinstance(_prompt, list) else _prompt
-SYSTEM_PROMPT = SYSTEM_PROMPT_RAW.replace("{max_output_chars}", str(MAX_OUTPUT_CHARS))
-
 # Hub
 HUB_URL = _config["hub"]["url"]
 AGENT_NAME = _config["hub"]["agent_name"]
 POLL_INTERVAL = _config["hub"]["poll_interval_seconds"]
+
+# System prompt
+_prompt = _config["system_prompt"]
+SYSTEM_PROMPT_RAW = "\n".join(_prompt) if isinstance(_prompt, list) else _prompt
+SYSTEM_PROMPT = SYSTEM_PROMPT_RAW.replace("{max_output_chars}", str(MAX_OUTPUT_CHARS))
+SYSTEM_PROMPT = SYSTEM_PROMPT.replace("{agent_name}", AGENT_NAME)
 
 # Classifier prompt
 _classifier = _config["classifier_prompt"]

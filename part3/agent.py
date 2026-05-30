@@ -4,6 +4,16 @@ from config import SYSTEM_PROMPT, MAX_ITERATIONS, TOOLS
 import json
 from sessions import start_session, save_session
 
+MAX_MESSAGES = 30
+
+def trim_messages(messages):
+    """Keep system prompt + the most recent N-1 messages."""
+    if len(messages) <= MAX_MESSAGES:
+        return messages
+    system = messages[0]
+    recent = messages[-(MAX_MESSAGES - 1):]
+    print(f"[agent] trimmed messages: kept system + last {MAX_MESSAGES - 1}")
+    return [system] + recent
 
 def execute_tool_call(tool_call):
     """Execute a tool call and return the output"""
@@ -45,6 +55,7 @@ def run_agent(user_goal, deliver, budget=None):
     print(f"[agent] session log: {session_path}")
 
     for iteration in range(MAX_ITERATIONS):
+        messages = trim_messages(messages)
         assistant_msg = chat(messages, tools=TOOLS, budget=budget)
         print(f"\n--- iteration {iteration} ---")
         print("MODEL:", assistant_msg)
@@ -89,8 +100,3 @@ def run_agent(user_goal, deliver, budget=None):
     else:
         deliver("[agent] hit iteration limit without producing a summary.")
 
-
-if __name__ == "__main__":
-    goal = input("What should the agent do? ")
-    print("\n=== AGENT REPLY ===")
-    run_agent(goal, deliver=print)

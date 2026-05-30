@@ -8,11 +8,15 @@ from classifier import classify, format_chat_history
 from agent import run_agent
 from provider import chat
 import re
+import json
+import os
 
 
 CHAT_HISTORY_SIZE = 10
 INTER_CHUNK_DELAY = 1.2  # seconds between posting chunks (hub allows 1s/request)
+PINNED_HISTORY_SIZE = 8  # keep up to 8 important messages permanently
 
+pinned_history = []
 chat_history = []
 budget = Budget(MAX_TOKENS_DEFAULT, MAX_REQUESTS_PER_MINUTE_DEFAULT)
 _last_ratelimit_print = 0
@@ -31,10 +35,32 @@ def remember(msg):
     chat_history.append(msg)
     if len(chat_history) > CHAT_HISTORY_SIZE:
         chat_history.pop(0)
+    
+    if should_pin(msg):
+        pinned_history.append(msg)
+        if len(pinned_history) > PINNED_HISTORY_SIZE:
+            pinned_history.pop(0)
+
+def should_pin(msg):
+    # Pin human messages, direct mentions of us, role claims, our own deliverables.
+    if msg["agent_name"].startswith("human:"):
+        return True
+    content = msg["content"].lower()
+    if f"@{AGENT_NAME.lower()}" in content or AGENT_NAME.lower() in content:
+        return True
+    if msg["agent_name"] == AGENT_NAME and ("```" in msg["content"] or "i wrote" in content.lower()):
+        return True
+    return False
 
 def history_for_llm():
-    """Return chat history sorted by seq, excluding the just-added entry."""
-    return sorted(chat_history[:-1], key=lambda m: m.get("seq", 0))
+    """Merge pinned and rolling, dedupe by seq, sort by seq, return."""
+    seen = set()
+    merged = []
+    for m in pinned_history + history_for_llm():
+        if m.get("seq") not in seen:
+            seen.add(m.get("seq"))
+            merged.append(m)
+    return sorted(merged, key=lambda m: m.get("seq", 0))
 
 def reassemble_multipart(msg):
     """Given an incoming message, handle multi-part reassembly.
@@ -94,6 +120,14 @@ def split_for_hub(text, max_chars):
         chunks.append(remaining)
     return chunks
 
+def load_runtime_overrides():
+    path = "runtime_overrides.json"
+    if not os.path.exists(path):
+        return {}
+    try:
+        return json.load(open(path))
+    except Exception:
+        return {}
 
 def make_deliver_to_hub():
     """Build a deliver function that posts to the hub, chunking if needed."""
@@ -328,7 +362,7 @@ def handle_message(msg):
 
     # Path 3: normal classifier-driven flow.
     try:
-        decision = classify(msg, chat_history[:-1], budget=budget)
+        decision = classify(msg, history_for_llm(), budget=budget)
     except RuntimeError as e:
         now = time.time()
         if now - _last_ratelimit_print > 30:
@@ -367,6 +401,11 @@ def handle_message(msg):
             "post a short chat reply summarizing what you did or what you found. "
             "Keep messages concise — every post counts against your 10-message cap."
         )
+
+    overrides = load_runtime_overrides()
+    extra_prompt = overrides.get("extra_prompt_note", "")
+    if extra_prompt:
+        user_message += f"\n\nRUNTIME NOTE: {extra_prompt}"
 
     deliver = make_deliver_to_hub()
     print(f"[handle] running agent for decision={decision}")
