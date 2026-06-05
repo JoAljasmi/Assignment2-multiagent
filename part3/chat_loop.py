@@ -56,7 +56,7 @@ def history_for_llm():
     """Merge pinned and rolling, dedupe by seq, sort by seq, return."""
     seen = set()
     merged = []
-    for m in pinned_history + history_for_llm():
+    for m in pinned_history + chat_history:
         if m.get("seq") not in seen:
             seen.add(m.get("seq"))
             merged.append(m)
